@@ -1,0 +1,76 @@
+
+name: SwitchCraft NX - Verificar projeto original
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - principal
+      - main
+      - master
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar projeto
+        uses: actions/checkout@v4
+
+      - name: Preparar ferramentas básicas
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 python3-pip git make gcc g++ zip unzip
+
+      - name: Verificar arquivos originais
+        shell: bash
+        run: |
+          echo "=== ESTRUTURA DO PROJETO ==="
+          ls -la
+          echo "=== SCRIPTS DE COMPILACAO ==="
+
+          for f in fetch.py build-natives.sh build-openal.sh build-a64.sh build-nro.sh; do
+            if [ -f "$f" ]; then
+              echo "OK: $f"
+            else
+              echo "FALTA: $f"
+            fi
+          done
+
+          echo "=== DEPENDENCIAS ESPECIFICAS ==="
+
+          for f in mc-optifine.jar build-x64.sh run-host.sh; do
+            if [ -f "$f" ]; then
+              echo "ENCONTRADO: $f"
+            else
+              echo "AINDA NAO PREPARADO: $f"
+            fi
+          done
+
+          echo "=== DIRETORIOS ==="
+          for d in lwjgl3 deps game natives-out; do
+            if [ -d "$d" ]; then
+              echo "ENCONTRADO: $d"
+            else
+              echo "AINDA NAO PREPARADO: $d"
+            fi
+          done
+
+          echo "=== FIM DA VERIFICACAO ==="
+
+      - name: Salvar relatorio
+        if: always()
+        run: |
+          {
+            echo "Verificacao do projeto minecraft-switch"
+            date -u
+            find . -maxdepth 2 -type f -print | sort
+          } > relatorio-switchcraft.txt
+
+      - name: Disponibilizar relatorio
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: relatorio-switchcraft
+          path: relatorio-switchcraft.txt
+          if-no-files-found: warn
